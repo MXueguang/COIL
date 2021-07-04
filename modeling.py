@@ -182,6 +182,8 @@ class COIL(nn.Module):
         return tok_scores
 
     def compute_tok_score_cart(self, doc_reps, doc_input_ids, qry_reps, qry_input_ids, qry_attention_mask):
+        if self.model_args.no_query:
+            qry_reps = qry_attention_mask
         qry_input_ids = qry_input_ids.unsqueeze(2).unsqueeze(3)  # Q * LQ * 1 * 1
         doc_input_ids = doc_input_ids.unsqueeze(0).unsqueeze(1)  # 1 * 1 * D * LD
         exact_match = doc_input_ids == qry_input_ids  # Q * LQ * D * LD

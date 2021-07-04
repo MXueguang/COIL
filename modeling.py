@@ -183,17 +183,19 @@ class COIL(nn.Module):
 
     def compute_tok_score_cart(self, doc_reps, doc_input_ids, qry_reps, qry_input_ids, qry_attention_mask):
         if self.model_args.no_query:
-            qry_reps = qry_attention_mask
+            q_reps = qry_attention_mask.float()
+        else:
+            q_reps = qry_reps
         qry_input_ids = qry_input_ids.unsqueeze(2).unsqueeze(3)  # Q * LQ * 1 * 1
         doc_input_ids = doc_input_ids.unsqueeze(0).unsqueeze(1)  # 1 * 1 * D * LD
         exact_match = doc_input_ids == qry_input_ids  # Q * LQ * D * LD
         exact_match = exact_match.float()
         scores_no_masking = torch.matmul(
-            qry_reps.view(-1, self.model_args.token_dim),  # (Q * LQ) * d
+            q_reps.view(-1, self.model_args.token_dim),  # (Q * LQ) * d
             doc_reps.view(-1, self.model_args.token_dim).transpose(0, 1)  # d * (D * LD)
         )
         scores_no_masking = scores_no_masking.view(
-            *qry_reps.shape[:2], *doc_reps.shape[:2])  # Q * LQ * D * LD
+            *q_reps.shape[:2], *doc_reps.shape[:2])  # Q * LQ * D * LD
         # scores_no_masking = scores_no_masking.permute(0, 2, 1, 3)  # Q * D * LQ * LD
         if self.model_args.pooling == 'max':
             scores, _ = (scores_no_masking * exact_match).max(dim=3)  # Q * LQ * D
